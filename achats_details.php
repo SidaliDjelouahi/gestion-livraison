@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $conn->beginTransaction();
 
         // Insertion dans ventes
-        $stmt = $conn->prepare("INSERT INTO ventes (num_vente, date, id_user, versement) VALUES (?,?,?,?)");
+        $stmt = $conn->prepare("INSERT INTO achats (num_achat, date, id_user, versement) VALUES (?,?,?,?)");
         $stmt->execute([$num_vente, $date, $id_client, $versement]);
         $id_vente = $conn->lastInsertId();
 
@@ -21,11 +21,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $produits = json_decode($_POST['produits_json'], true);
 
         foreach($produits as $p){
-            $stmt = $conn->prepare("INSERT INTO ventes_details (id_vente, id_produit, prix_vente, quantite) VALUES (?,?,?,?)");
+            $stmt = $conn->prepare("INSERT INTO achats_details (id_achat, id_produit, prix_achat, quantite) VALUES (?,?,?,?)");
             $stmt->execute([$id_vente, $p['id'], $p['prix'], $p['qte']]);
 
             // Mise à jour du stock
-            $conn->prepare("UPDATE produits SET quantite = quantite - ? WHERE id=?")
+            $conn->prepare("UPDATE produits SET quantite = quantite + ? WHERE id=?")
                  ->execute([$p['qte'], $p['id']]);
         }
 
@@ -36,6 +36,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['success'] = "Erreur: " . $e->getMessage();
     }
 
-    header("Location: bon_vente.php");
+    header("Location: bon_achat.php");
     exit();
 }

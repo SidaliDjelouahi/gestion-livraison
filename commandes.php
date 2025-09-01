@@ -19,10 +19,10 @@ if (isset($_GET['delete'])) {
 
 // Récupérer commandes avec clients + produits
 $sql = "SELECT c.id, c.date, c.telephone, 
-               cl.name AS client_name, 
+               cl.username AS client_name, 
                p.name AS produit_name
         FROM commandes c
-        LEFT JOIN clients cl ON c.id_client = cl.id
+        LEFT JOIN users cl ON c.id_client = cl.id
         LEFT JOIN produits p ON c.id_produit = p.id
         ORDER BY c.date DESC";
 $stmt = $conn->query($sql);

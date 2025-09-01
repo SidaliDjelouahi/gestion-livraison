@@ -14,8 +14,19 @@ include('includes/db.php');     // doit retourner $conn en PDO
 include('includes/header.php');
 include('includes/sidebar.php');
 
-// Récupérer les utilisateurs avec PDO
-$stmt = $conn->prepare("SELECT id, username, rank FROM users ORDER BY id DESC");
+// Préparer la requête selon le rôle
+if ($_SESSION['rank'] === 'manager') {
+    // Manager → voit uniquement les "user"
+    $stmt = $conn->prepare("SELECT id, username, rank FROM users WHERE rank = 'user' ORDER BY id DESC");
+} elseif ($_SESSION['rank'] === 'admin') {
+    // Admin → voit tout
+    $stmt = $conn->prepare("SELECT id, username, rank FROM users ORDER BY id DESC");
+} else {
+    // Si c'est un "user" → redirection par sécurité
+    header("Location: default.php");
+    exit();
+}
+
 $stmt->execute();
 $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -23,8 +34,10 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <div class="container my-4">
     <h2 class="mb-4">Liste des utilisateurs 👥</h2>
 
-    <!-- Bouton ajouter -->
-    <a href="users_ajouter.php" class="btn btn-success mb-3">+ Ajouter un utilisateur</a>
+    <!-- Bouton ajouter (optionnel : visible seulement admin/manager) -->
+    <?php if ($_SESSION['rank'] === 'admin' || $_SESSION['rank'] === 'manager'): ?>
+        <a href="users_ajouter.php" class="btn btn-success mb-3">+ Ajouter un utilisateur</a>
+    <?php endif; ?>
 
     <!-- Table pour Desktop -->
     <div class="table-responsive d-none d-md-block">
@@ -63,7 +76,6 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="card-body">
                     <h5 class="card-title"><?= htmlspecialchars($row['username']) ?></h5>
                     <p class="card-text">
-                        <br>
                         <strong>Rôle :</strong> <?= htmlspecialchars($row['rank']) ?>
                     </p>
                     <a href="users_modifier.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-warning">Modifier</a>

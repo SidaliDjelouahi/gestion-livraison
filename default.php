@@ -1,6 +1,14 @@
 <?php
 session_start();
 include "includes/db.php";
+
+// Calculer le nombre de commandes avec l'état 'commande'
+$commande_count = 0;
+if ($_SESSION['rank'] === 'admin' || $_SESSION['rank'] === 'manager') {
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM commandes WHERE etat = 'commande'");
+    $stmt->execute();
+    $commande_count = $stmt->fetchColumn();
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -24,6 +32,20 @@ include "includes/db.php";
         .card:hover { transform: translateY(-5px); box-shadow: 0px 8px 20px rgba(0,0,0,0.15); }
         .product-title { font-weight: bold; font-size: 1.1rem; }
         .price { color: #0d6efd; font-weight: bold; font-size: 1.2rem; }
+        .product-title {
+            font-weight: bold;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px; /* espace entre prix et nom */
+        }
+        .product-title .price {
+            color: #d9534f; /* Rouge vif pour différencier */
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        
     </style>
 </head>
 <body>
@@ -35,18 +57,28 @@ include "includes/db.php";
 
     <?php if (isset($_SESSION['user_id'])): ?>
   <!-- Dropdown utilisateur si connecté -->
-  <div class="dropdown">
-    <button class="btn btn-light text-primary px-3 rounded-3 dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
-      <i class="bi bi-person-circle"></i> <?= htmlspecialchars($_SESSION['username']) ?>
-    </button>
-    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
-      
-      <li><a class="dropdown-item" href="settings.php"><i class="bi bi-gear"></i> Settings</a></li>
-      <li><a class="dropdown-item" href="commandes.php"><i class="bi bi-bag-check"></i> Commandes</a></li>
-      <li><hr class="dropdown-divider"></li>
-      <li><a class="dropdown-item text-danger" href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
-    </ul>
-  </div>
+<div class="dropdown">
+  <button class="btn btn-light text-primary px-3 rounded-3 dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+    <i class="bi bi-person-circle"></i> <?= htmlspecialchars($_SESSION['username']) ?>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+    <?php if ($_SESSION['rank'] === 'admin' || $_SESSION['rank'] === 'manager'): ?>
+        <li><a class="dropdown-item" href="dashboard.php"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+        <li>
+          <a class="dropdown-item" href="commandes.php">
+            <i class="bi bi-bag-check"></i> Commandes 
+            <?php if ($commande_count > 0): ?>
+                <span class="badge bg-danger"><?= $commande_count ?></span>
+            <?php endif; ?>
+          </a>
+        </li>
+    <?php endif; ?>
+    <li><a class="dropdown-item" href="settings.php"><i class="bi bi-gear"></i> Settings</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item text-danger" href="logout.php"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+  </ul>
+</div>
+
 <?php else: ?>
   <!-- Bouton login si pas connecté -->
   <a class="btn btn-light text-primary px-3 rounded-3" href="login.php">

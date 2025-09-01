@@ -3,10 +3,10 @@ include 'includes/db.php';
 
 $q = "%" . $_GET['q'] . "%";
 
-// Préparer la requête pour chercher dans "users" uniquement ceux qui ont rank = 'user'
+// Préparer la requête pour chercher dans "users" uniquement ceux qui ont rank = 'provider'
 $stmt = $conn->prepare("SELECT id, username, rank 
                         FROM users 
-                        WHERE rank = 'user' 
+                        WHERE rank = 'provider' 
                         AND username LIKE ?");
 $stmt->execute([$q]);
 

@@ -14,34 +14,46 @@ try {
     die("Erreur de connexion : " . $e->getMessage());
 }
 
+$error = "";
+$success = "";
+
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $username = trim($_POST['username']);
-    $password = trim($_POST['password']);
-    $rank = "user"; // par défaut
+    $username   = trim($_POST['username']);
+    $telephone  = trim($_POST['telephone']);
+    $password   = trim($_POST['password']);
+    $confirm    = trim($_POST['confirm_password']);
+    $rank       = "user"; // par défaut
 
-    // Vérification si l’utilisateur existe déjà
-    $check = $pdo->prepare("SELECT id FROM users WHERE username = ?");
-    $check->execute([$username]);
-
-    if ($check->rowCount() > 0) {
-        echo "❌ Ce nom d’utilisateur existe déjà.";
+    // Vérification des champs
+    if (empty($username) || empty($telephone) || empty($password) || empty($confirm)) {
+        $error = "Tous les champs sont obligatoires.";
+    } elseif ($password !== $confirm) {
+        $error = "Les mots de passe ne correspondent pas.";
     } else {
-        // Hash du mot de passe
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+        // Vérification si l’utilisateur existe déjà
+        $check = $pdo->prepare("SELECT id FROM users WHERE username = ? OR telephone = ?");
+        $check->execute([$username, $telephone]);
 
-        // Insertion
-        $stmt = $pdo->prepare("INSERT INTO users (username, password, rank) VALUES (?, ?, ?)");
-        if ($stmt->execute([$username, $hashedPassword, $rank])) {
-            $_SESSION['user'] = $username;
-            $_SESSION['rank'] = $rank;
-            header("Location: default.php");
-            exit;
+        if ($check->rowCount() > 0) {
+            $error = "❌ Ce nom d’utilisateur ou numéro de téléphone existe déjà.";
         } else {
-            echo "❌ Erreur lors de l'inscription.";
+            // Hash du mot de passe
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+            // Insertion avec téléphone
+            $stmt = $pdo->prepare("INSERT INTO users (username, telephone, password, rank) VALUES (?, ?, ?, ?)");
+            if ($stmt->execute([$username, $telephone, $hashedPassword, $rank])) {
+                $success = "✅ Compte créé avec succès ! Redirection...";
+                $_SESSION['user'] = $username;
+                $_SESSION['rank'] = $rank;
+            } else {
+                $error = "❌ Erreur lors de l'inscription.";
+            }
         }
     }
 }
 ?>
+
 
 
 <!DOCTYPE html>
@@ -86,6 +98,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <div class="mb-3">
                   <label class="form-label">Confirmer le mot de passe</label>
                   <input type="password" name="confirm_password" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Telephone</label>
+                  <input type="text" name="telephone" class="form-control" required>
                 </div>
                 <button type="submit" class="btn btn-success w-100">S'inscrire</button>
               </form>

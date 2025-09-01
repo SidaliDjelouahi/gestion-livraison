@@ -78,6 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p class="text-center mt-3">
               <a href="signup.php">Créer un compte</a>
             </p>
+            <p class="text-center mt-3">
+              <a href="default.php">Retoure</a>
+            </p>
 
           </div>
         </div>

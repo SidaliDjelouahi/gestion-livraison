@@ -33,7 +33,10 @@ if ($produits) {
                          class="card-img-top" alt="<?= htmlspecialchars($row['name']); ?>">
                 <?php endif; ?>
                 <div class="card-body d-flex flex-column">
-                    <h5 class="product-title"><?= htmlspecialchars($row['name']); ?></h5>
+                    <h5 class="product-title">
+                        <span class="price"><?= number_format($row['prix_vente'], 2) ?> DA</span>
+                        <?= htmlspecialchars($row['name']) ?>
+                    </h5>
                     <p class="text-muted small"><?= nl2br(htmlspecialchars($row['description'])); ?></p>
                     <div class="mt-auto d-flex justify-content-between align-items-center">
                         <span class="badge bg-success">Stock: <?= $row['quantite']; ?></span>

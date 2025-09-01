@@ -6,9 +6,9 @@ include 'includes/sidebar.php';
 
 // Récupérer les bons de vente avec client
 $stmt = $conn->query("
-    SELECT v.id, v.num_vente, v.date, v.id_client, v.versement, c.name AS client_nom
+    SELECT v.id, v.num_vente, v.date, v.id_client, v.versement, c.username AS client_nom
     FROM ventes v
-    JOIN clients c ON v.id_client = c.id
+    JOIN users c ON v.id_client = c.id
     ORDER BY v.id DESC
 ");
 $ventes = $stmt->fetchAll(PDO::FETCH_ASSOC);

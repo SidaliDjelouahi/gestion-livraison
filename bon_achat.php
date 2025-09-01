@@ -11,16 +11,16 @@ include 'includes/db.php';
 include 'includes/sidebar.php';
 
 // Générer numéro de bon automatique
-$stmt = $conn->query("SELECT MAX(id) AS last_id FROM ventes");
+$stmt = $conn->query("SELECT MAX(id) AS last_id FROM achats");
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
-$num_vente = "BV-" . str_pad(($row['last_id'] ?? 0) + 1, 5, "0", STR_PAD_LEFT);
+$num_vente = "BA-" . str_pad(($row['last_id'] ?? 0) + 1, 5, "0", STR_PAD_LEFT);
 ?>
 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Nouveau Bon de Vente</title>
+  <title>Nouveau Bon d'Achat</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <style>
@@ -41,9 +41,9 @@ $num_vente = "BV-" . str_pad(($row['last_id'] ?? 0) + 1, 5, "0", STR_PAD_LEFT);
 <body class="p-4">
 
 <div class="container">
-  <h3 class="mb-4">Nouveau bon de vente</h3>
+  <h3 class="mb-4">Nouveau bon d'Achat</h3>
 
-  <form method="post" action="ventes_details.php" id="venteForm">
+  <form method="post" action="achats_details.php" id="venteForm">
     <div class="row mb-3">
       <!-- Numéro de bon -->
       <div class="col-md-4">
@@ -59,7 +59,7 @@ $num_vente = "BV-" . str_pad(($row['last_id'] ?? 0) + 1, 5, "0", STR_PAD_LEFT);
 
       <!-- Recherche client -->
       <div class="col-md-4 position-relative">
-        <label class="form-label">Client</label>
+        <label class="form-label">Fournisseur</label>
         <input type="text" id="client_search" class="form-control" placeholder="Rechercher client...">
         <input type="hidden" name="id_client" id="id_client">
         <div id="client_result" class="list-group position-absolute w-100"></div>
@@ -76,7 +76,7 @@ $num_vente = "BV-" . str_pad(($row['last_id'] ?? 0) + 1, 5, "0", STR_PAD_LEFT);
       </div>
 
       <div class="col-md-4">
-        <label class="form-label">Prix de vente</label>
+        <label class="form-label">Prix d'achat</label>
         <input type="number" step="0.01" id="prix_vente" class="form-control">
       </div>
 
@@ -114,7 +114,7 @@ $num_vente = "BV-" . str_pad(($row['last_id'] ?? 0) + 1, 5, "0", STR_PAD_LEFT);
 
     <div class="mt-4 d-flex gap-2">
       <button type="submit" class="btn btn-primary">Valider le Bon</button>
-      <a href="bon_vente_historique.php" class="btn btn-secondary">Historique Vente</a>
+      <a href="bon_achat_historique.php" class="btn btn-secondary">Historique Achats</a>
     </div>
   </form>
 </div>
@@ -128,7 +128,7 @@ $(document).ready(function(){
     $("#client_search").keyup(function(){
       let q = $(this).val();
       if(q.length > 1){
-        $.get("search_client.php", {q:q}, function(data){
+        $.get("search_fournisseur.php", {q:q}, function(data){
           if($.trim(data) !== "") {
             $("#client_result").html(data).show();
           } else {
@@ -153,7 +153,7 @@ $(document).ready(function(){
   $("#produit_search").keyup(function(){
     let q = $(this).val();
     if(q.length > 1){
-      $.get("search_produit.php", {q:q}, function(data){
+      $.get("search_produit_achat.php", {q:q}, function(data){
         $("#produit_result").html(data).show();
       });
     } else { $("#produit_result").hide(); }
