@@ -1,0 +1,20 @@
+
+
+gestion de la caisse , credit et capital
+gestion des charges 
+creer dans navbar nombre des commandes dans drop
+
+creer une copie local et push it dans github
+ajouter chaque fois une version modifier et commit la modification
+
+creer column etat dans table commandes contient commande,appel,refuse,accept,livred et afficher etat dans table des commandes
+creer table formations contient id,video,id_user,etat_user(not_view, view),commentaire
+creer notification dans login manager et admin pour un video a voir jeusqu'a la fin pour qu'il soit compter comme view
+creer une notification de formation 
+creer une documentaion qui explique les idees dans l'app
+commandes.php discussion, etat
+
+
+fichier modifiee 
+defalut.php
+search.php
