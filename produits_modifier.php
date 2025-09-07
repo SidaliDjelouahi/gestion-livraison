@@ -51,10 +51,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     mkdir($targetDir, 0777, true);
                 }
 
-                // Nettoyage du nom du produit pour nommer le fichier
+                // Nettoyage du nom et génération d’un nom unique
                 $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '_', strtolower($name));
                 $fileType = strtolower(pathinfo($_FILES['photo']['name'], PATHINFO_EXTENSION));
-                $filename = $safeName . "." . $fileType;
+                $filename = $safeName . "_" . time() . "." . $fileType;
                 $targetFile = $targetDir . $filename;
 
                 $allowedTypes = ['jpg', 'jpeg', 'png', 'gif'];
@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt->execute([$code, $name, $description, $quantite, $prix_achat, $prix_vente, $etat, $photo, $id]);
 
                 $success = "✅ Produit modifié avec succès.";
-                // mise à jour des données pour réafficher le formulaire avec les nouvelles valeurs
+                // mise à jour des données pour réafficher le formulaire
                 $produit = [
                     'code' => $code,
                     'name' => $name,
@@ -153,7 +153,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="mb-3">
             <label class="form-label">Photo actuelle</label><br>
             <?php if (!empty($produit['photo'])): ?>
-                <img src="photos_produits/<?= htmlspecialchars($produit['photo']); ?>" alt="photo" width="120" class="mb-2"><br>
+                <img src="photos_produits/<?= htmlspecialchars($produit['photo']); ?>?t=<?= time(); ?>" 
+                     alt="photo" width="120" class="mb-2"><br>
             <?php else: ?>
                 <span>Aucune photo</span><br>
             <?php endif; ?>
