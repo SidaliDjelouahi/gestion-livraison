@@ -51,19 +51,20 @@
     <div id="mySidebar">
         <a href="javascript:void(0)" onclick="toggleSidebar()" class="text-danger fw-bold">✖ Fermer</a>
         <a href="default.php">🏠 Home</a>
-        <a href="bon_vente.php">📄 Bon de vente</a>
         <a href="produits.php">📦 Produits</a>
-        <a href="commandes.php">🛒 Commandes</a>
+        <a href="bon_vente.php">📄 Bon de vente</a>
         <a href="ventes_historique.php">📊 Historique ventes</a>
-        <a href="achats_historique.php">📊 Historique achats</a>
-        <a href="users.php">👥 Utilisateurs</a>
         <a href="clients.php">👤 Clients</a> 
+        <a href="commandes.php">🛒 Commandes</a>
 
         <!-- Liens visibles uniquement pour les administrateurs -->
         <?php if (isset($_SESSION['rank']) && $_SESSION['rank'] == 'admin'): ?>
             <a href="bon_achat.php">💼 Bon d'Achat</a>
+            <a href="achats_historique.php">📊 Historique achats</a>
             <a href="fournisseurs.php">🏭 Fournisseurs</a>
-            <a href="balance.php">📒 Balance</a> <!-- ✅ Nouveau lien -->
+            <a href="equipements.php">⚙️ Équipements</a>
+            <a href="balance.php">📒 Balance</a>
+            <a href="users.php">👥 Utilisateurs</a>
         <?php endif; ?>
 
         <a href="logout.php" class="text-warning">🚪 Logout</a>
