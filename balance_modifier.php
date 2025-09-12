@@ -26,11 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $credit_clients = $_POST['credit_clients'];
     $credit_fournisseurs = $_POST['credit_fournisseurs'];
     $capital = $_POST['capital'];
+    $commentaire = $_POST['commentaire']; // <-- NOUVEAU
 
     $stmt = $conn->prepare("UPDATE balance 
-        SET inventaire = ?, caisse = ?, credit_clients = ?, credit_fournisseurs = ?, capital = ?
+        SET inventaire = ?, caisse = ?, credit_clients = ?, credit_fournisseurs = ?, capital = ?, commentaire = ?
         WHERE id = ?");
-    $stmt->execute([$inventaire, $caisse, $credit_clients, $credit_fournisseurs, $capital, $id]);
+    $stmt->execute([$inventaire, $caisse, $credit_clients, $credit_fournisseurs, $capital, $commentaire, $id]);
 
     header("Location: balance.php?success=1");
     exit();
@@ -46,23 +47,34 @@ include "includes/sidebar.php";
     <form method="POST">
         <div class="mb-3">
             <label class="form-label">Inventaire</label>
-            <input type="number" step="0.01" name="inventaire" class="form-control" value="<?= htmlspecialchars($balance['inventaire']) ?>" required>
+            <input type="number" step="0.01" name="inventaire" class="form-control" 
+                   value="<?= htmlspecialchars($balance['inventaire']) ?>" required>
         </div>
         <div class="mb-3">
             <label class="form-label">Caisse</label>
-            <input type="number" step="0.01" name="caisse" class="form-control" value="<?= htmlspecialchars($balance['caisse']) ?>" required>
+            <input type="number" step="0.01" name="caisse" class="form-control" 
+                   value="<?= htmlspecialchars($balance['caisse']) ?>" required>
         </div>
         <div class="mb-3">
             <label class="form-label">Crédit Clients</label>
-            <input type="number" step="0.01" name="credit_clients" class="form-control" value="<?= htmlspecialchars($balance['credit_clients']) ?>" required>
+            <input type="number" step="0.01" name="credit_clients" class="form-control" 
+                   value="<?= htmlspecialchars($balance['credit_clients']) ?>" required>
         </div>
         <div class="mb-3">
             <label class="form-label">Crédit Fournisseurs</label>
-            <input type="number" step="0.01" name="credit_fournisseurs" class="form-control" value="<?= htmlspecialchars($balance['credit_fournisseurs']) ?>" required>
+            <input type="number" step="0.01" name="credit_fournisseurs" class="form-control" 
+                   value="<?= htmlspecialchars($balance['credit_fournisseurs']) ?>" required>
         </div>
         <div class="mb-3">
             <label class="form-label">Capital</label>
-            <input type="number" step="0.01" name="capital" class="form-control" value="<?= htmlspecialchars($balance['capital']) ?>" required>
+            <input type="number" step="0.01" name="capital" class="form-control" 
+                   value="<?= htmlspecialchars($balance['capital']) ?>" required>
+        </div>
+
+        <!-- NOUVEAU CHAMP COMMENTAIRE -->
+        <div class="mb-3">
+            <label class="form-label">Commentaire</label>
+            <textarea name="commentaire" class="form-control" rows="3"><?= htmlspecialchars($balance['commentaire'] ?? '') ?></textarea>
         </div>
         
         <button type="submit" class="btn btn-primary">💾 Enregistrer</button>

@@ -4,16 +4,13 @@ include "includes/db.php";
 include "includes/header.php";
 include "includes/sidebar.php";
 
-// Activer les erreurs PDO
 $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-// Vérifier la connexion utilisateur
 if (!isset($_SESSION['user_id'])) {
     header("Location: default.php");
     exit();
 }
 
-// --- Date d'aujourd'hui ---
 $date_auj = date("Y-m-d H:i:s");
 
 try {
@@ -99,7 +96,22 @@ try {
 
     // --- Sauvegarde nouvelle balance ---
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sauvegarder'])) {
-        $capital = $inventaire + $equipements + $caisse + $credit_clients - $credit_fournisseurs;
+        // IMPORTANT: on vérifie explicitement que le champ n'est pas une chaîne vide
+        if (isset($_POST['caisse_corrigee']) && $_POST['caisse_corrigee'] !== '') {
+            // autoriser l'utilisateur à utiliser la virgule comme séparateur décimal
+            $raw = str_replace(',', '.', trim($_POST['caisse_corrigee']));
+            $caisse_corrigee = floatval($raw);
+        } else {
+            $caisse_corrigee = floatval($caisse);
+        }
+
+        // forcer les autres valeurs en float pour éviter les concaténations
+        $inventaire_f = floatval($inventaire);
+        $equipements_f = floatval($equipements);
+        $credit_clients_f = floatval($credit_clients);
+        $credit_fournisseurs_f = floatval($credit_fournisseurs);
+
+        $capital = $inventaire_f + $equipements_f + $caisse_corrigee + $credit_clients_f - $credit_fournisseurs_f;
 
         $commentaire = $_POST['commentaire'] ?? null;
 
@@ -107,13 +119,21 @@ try {
             INSERT INTO balance (date, inventaire, equipements, caisse, credit_clients, credit_fournisseurs, capital, commentaire)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $stmt_insert->execute([$date_auj, $inventaire, $equipements, $caisse, $credit_clients, $credit_fournisseurs, $capital, $commentaire]);
+        $stmt_insert->execute([
+            $date_auj,
+            $inventaire_f,
+            $equipements_f,
+            $caisse_corrigee,
+            $credit_clients_f,
+            $credit_fournisseurs_f,
+            $capital,
+            $commentaire
+        ]);
 
         header("Location: balance.php?saved=1");
         exit();
     }
 
-    // --- Récupérer balances ---
     $stmt_balance = $conn->prepare("SELECT * FROM balance ORDER BY id DESC");
     $stmt_balance->execute();
     $balances = $stmt_balance->fetchAll(PDO::FETCH_ASSOC);
@@ -144,83 +164,96 @@ try {
     <p><strong>Équipements :</strong> <?= number_format($equipements, 2, ',', ' ') ?> DA</p>
     <p><strong>Crédits Clients :</strong> <?= number_format($credit_clients, 2, ',', ' ') ?> DA</p>
     <p><strong>Crédits Fournisseurs :</strong> <?= number_format($credit_fournisseurs, 2, ',', ' ') ?> DA</p>
-    <p class="text-info"><strong><?= $caisse_message ?></strong></p>
 
-    <!-- Formulaire Sauvegarde -->
+    <!-- Ajout input pour corriger la caisse (pré-rempli) -->
     <form method="post" class="mb-3">
+        <div class="mb-3">
+            <label class="form-label text-info"><strong><?= $caisse_message ?></strong></label><br>
+            <label for="caisse_corrigee" class="form-label">Corriger caisse :</label>
+            <input type="number"
+                   step="0.01"
+                   name="caisse_corrigee"
+                   id="caisse_corrigee"
+                   class="form-control w-50"
+                   value="<?= htmlspecialchars(number_format((float)$caisse, 2, '.', '')) ?>"
+                   placeholder="Laisser vide pour garder la valeur calculée">
+        </div>
+
         <div class="mb-3">
             <label for="commentaire" class="form-label">📝 Commentaire</label>
             <textarea name="commentaire" id="commentaire" class="form-control" rows="2" placeholder="Ajouter un commentaire (facultatif)"></textarea>
         </div>
+        <a href="export_balance_excel.php" class="btn btn-primary mb-2">📤 Exporter en Excel</a>
         <button type="submit" name="sauvegarder" class="btn btn-success">💾 Sauvegarder la nouvelle balance</button>
     </form>
 
     <table class="table table-bordered table-striped">
-    <thead class="table-dark">
-        <tr>
-            <th>ID</th>
-            <th>Date</th>
-            <th>Inventaire</th>
-            <th>Équipements</th>
-            <th>Caisse</th>
-            <th>Crédit Clients</th>
-            <th>Crédit Fournisseurs</th>
-            <th>Capital</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php foreach ($balances as $index => $row): ?>
-        <tr>
-            <td><?= $row['id'] ?></td>
-            <td><?= $row['date'] ?></td>
-            <td><?= number_format($row['inventaire'], 2, ',', ' ') ?></td>
-            <td><?= number_format($row['equipements'], 2, ',', ' ') ?></td>
-            <td><?= number_format($row['caisse'], 2, ',', ' ') ?></td>
-            <td><?= number_format($row['credit_clients'], 2, ',', ' ') ?></td>
-            <td><?= number_format($row['credit_fournisseurs'], 2, ',', ' ') ?></td>
-            <td><?= number_format($row['capital'], 2, ',', ' ') ?></td>
-            <td>
-                <?php if ($index === 0): ?>
-                    <a href="balance.php?delete=<?= $row['id'] ?>" 
-                       class="btn btn-danger btn-sm"
-                       onclick="return confirm('Supprimer la dernière balance ?')">🗑 Supprimer</a>
-                    <a href="balance_modifier.php?id=<?= $row['id'] ?>" 
-                       class="btn btn-warning btn-sm">✏ Modifier</a>
-                <?php endif; ?>
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Inventaire</th>
+                <th>Équipements</th>
+                <th>Caisse</th>
+                <th>Crédit Clients</th>
+                <th>Crédit Fournisseurs</th>
+                <th>Capital</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($balances as $index => $row): ?>
+            <tr>
+                <td><?= $row['id'] ?></td>
+                <td><?= $row['date'] ?></td>
+                <td><?= number_format($row['inventaire'], 2, ',', ' ') ?></td>
+                <td><?= number_format($row['equipements'], 2, ',', ' ') ?></td>
+                <td><?= number_format($row['caisse'], 2, ',', ' ') ?></td>
+                <td><?= number_format($row['credit_clients'], 2, ',', ' ') ?></td>
+                <td><?= number_format($row['credit_fournisseurs'], 2, ',', ' ') ?></td>
+                <td><?= number_format($row['capital'], 2, ',', ' ') ?></td>
+                <td>
+                    <?php if ($index === 0): ?>
+                        <a href="balance.php?delete=<?= $row['id'] ?>" 
+                           class="btn btn-danger btn-sm"
+                           onclick="return confirm('Supprimer la dernière balance ?')">🗑 Supprimer</a>
+                        <a href="balance_modifier.php?id=<?= $row['id'] ?>" 
+                           class="btn btn-warning btn-sm">✏ Modifier</a>
+                    <?php endif; ?>
 
-                <?php if (!empty($row['commentaire'])): ?>
-                    <button type="button" 
-                            class="btn btn-info btn-sm" 
-                            data-bs-toggle="modal" 
-                            data-bs-target="#commentModal<?= $row['id'] ?>">
-                        💬 Commentaire
-                    </button>
+                    <?php if (!empty($row['commentaire'])): ?>
+                        <button type="button" 
+                                class="btn btn-info btn-sm" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#commentModal<?= $row['id'] ?>">
+                            💬 Commentaire
+                        </button>
 
-                    <!-- Modal -->
-                    <div class="modal fade" id="commentModal<?= $row['id'] ?>" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content">
-                                <div class="modal-header bg-info text-white">
-                                    <h5 class="modal-title">Commentaire (Balance ID <?= $row['id'] ?>)</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <?= nl2br(htmlspecialchars($row['commentaire'])) ?>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                        <!-- Modal -->
+                        <div class="modal fade" id="commentModal<?= $row['id'] ?>" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-info text-white">
+                                        <h5 class="modal-title">Commentaire (Balance ID <?= $row['id'] ?>)</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <?= nl2br(htmlspecialchars($row['commentaire'])) ?>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                <?php endif; ?>
-            </td>
-        </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
+                    <?php endif; ?>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>
