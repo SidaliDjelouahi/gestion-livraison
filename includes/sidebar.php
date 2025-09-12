@@ -63,6 +63,7 @@
             <a href="achats_historique.php">📊 Historique achats</a>
             <a href="fournisseurs.php">🏭 Fournisseurs</a>
             <a href="equipements.php">⚙️ Équipements</a>
+            <a href="fonctionnement.php">📊 Fonctionnements</a>
             <a href="balance.php">📒 Balance</a>
             <a href="users.php">👥 Utilisateurs</a>
         <?php endif; ?>

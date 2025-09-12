@@ -69,6 +69,11 @@ try {
 
     $credit_fournisseurs = $total_achats - $total_versements_achats;
 
+    // --- Solde fonctionnement ---
+    $stmt_fonct = $conn->prepare("SELECT IFNULL(SUM(versement),0) - IFNULL(SUM(depense),0) AS solde_fonct FROM fonctionnement");
+    $stmt_fonct->execute();
+    $solde_fonct = $stmt_fonct->fetch(PDO::FETCH_ASSOC)['solde_fonct'] ?? 0;
+
     // --- Dernière sauvegarde balance ---
     $stmt_last_balance = $conn->prepare("SELECT * FROM balance ORDER BY date DESC LIMIT 1");
     $stmt_last_balance->execute();
@@ -94,30 +99,32 @@ try {
         $caisse_message = "⚠️ Pas de sauvegarde trouvée. Caisse calculée directement : " . number_format($caisse, 2, ',', ' ') . " DA";
     }
 
+    // --- Calcul total caisse + fonctionnement ---
+    $total_caisse_fonct = $caisse + $solde_fonct;
+    $caisse_fonct_message = "💰 Mise à jour caisse + fonctionnement : " . number_format($total_caisse_fonct, 2, ',', ' ') . " DA";
+
     // --- Sauvegarde nouvelle balance ---
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sauvegarder'])) {
-        // IMPORTANT: on vérifie explicitement que le champ n'est pas une chaîne vide
         if (isset($_POST['caisse_corrigee']) && $_POST['caisse_corrigee'] !== '') {
-            // autoriser l'utilisateur à utiliser la virgule comme séparateur décimal
             $raw = str_replace(',', '.', trim($_POST['caisse_corrigee']));
             $caisse_corrigee = floatval($raw);
         } else {
             $caisse_corrigee = floatval($caisse);
         }
 
-        // forcer les autres valeurs en float pour éviter les concaténations
         $inventaire_f = floatval($inventaire);
         $equipements_f = floatval($equipements);
         $credit_clients_f = floatval($credit_clients);
         $credit_fournisseurs_f = floatval($credit_fournisseurs);
+        $solde_fonct_f = floatval($solde_fonct);
 
-        $capital = $inventaire_f + $equipements_f + $caisse_corrigee + $credit_clients_f - $credit_fournisseurs_f;
+        $capital = $inventaire_f + $equipements_f + $caisse_corrigee + $solde_fonct_f + $credit_clients_f - $credit_fournisseurs_f;
 
         $commentaire = $_POST['commentaire'] ?? null;
 
         $stmt_insert = $conn->prepare("
-            INSERT INTO balance (date, inventaire, equipements, caisse, credit_clients, credit_fournisseurs, capital, commentaire)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO balance (date, inventaire, equipements, caisse, credit_clients, credit_fournisseurs, fonctionnement, capital, commentaire)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt_insert->execute([
             $date_auj,
@@ -126,6 +133,7 @@ try {
             $caisse_corrigee,
             $credit_clients_f,
             $credit_fournisseurs_f,
+            $solde_fonct_f,
             $capital,
             $commentaire
         ]);
@@ -164,11 +172,17 @@ try {
     <p><strong>Équipements :</strong> <?= number_format($equipements, 2, ',', ' ') ?> DA</p>
     <p><strong>Crédits Clients :</strong> <?= number_format($credit_clients, 2, ',', ' ') ?> DA</p>
     <p><strong>Crédits Fournisseurs :</strong> <?= number_format($credit_fournisseurs, 2, ',', ' ') ?> DA</p>
+    <p><strong>Fonctionnement :</strong> <?= number_format($solde_fonct, 2, ',', ' ') ?> DA</p>
 
-    <!-- Ajout input pour corriger la caisse (pré-rempli) -->
+    <!-- Affichage de la caisse et caisse+fonctionnement -->
+    <div class="mb-3">
+        <p class="text-primary"><strong><?= $caisse_message ?></strong></p>
+        <p class="text-success"><strong><?= $caisse_fonct_message ?></strong></p>
+    </div>
+
+    <!-- Formulaire pour corriger la caisse -->
     <form method="post" class="mb-3">
         <div class="mb-3">
-            <label class="form-label text-info"><strong><?= $caisse_message ?></strong></label><br>
             <label for="caisse_corrigee" class="form-label">Corriger caisse :</label>
             <input type="number"
                    step="0.01"
@@ -187,6 +201,7 @@ try {
         <button type="submit" name="sauvegarder" class="btn btn-success">💾 Sauvegarder la nouvelle balance</button>
     </form>
 
+    <!-- Tableau des balances -->
     <table class="table table-bordered table-striped">
         <thead class="table-dark">
             <tr>
@@ -197,6 +212,7 @@ try {
                 <th>Caisse</th>
                 <th>Crédit Clients</th>
                 <th>Crédit Fournisseurs</th>
+                <th>Solde Fonctionnement</th>
                 <th>Capital</th>
                 <th>Actions</th>
             </tr>
@@ -211,6 +227,7 @@ try {
                 <td><?= number_format($row['caisse'], 2, ',', ' ') ?></td>
                 <td><?= number_format($row['credit_clients'], 2, ',', ' ') ?></td>
                 <td><?= number_format($row['credit_fournisseurs'], 2, ',', ' ') ?></td>
+                <td><?= number_format($row['fonctionnement'], 2, ',', ' ') ?></td>
                 <td><?= number_format($row['capital'], 2, ',', ' ') ?></td>
                 <td>
                     <?php if ($index === 0): ?>
